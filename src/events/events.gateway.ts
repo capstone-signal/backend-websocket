@@ -4,7 +4,7 @@ import { onlineMap } from './onlineMap';
 
 
 
-@WebSocketGateway(8080, {transports: ['websocket']})
+@WebSocketGateway(parseInt(process.env.WEBSOCKET_PORT), {transports: ['websocket']}) // TODO : config service for externalization config
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect{
   @WebSocketServer() public server : Server;
 
@@ -16,7 +16,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
   afterInit(server: Server) {
     console.log('Websocketserver init');
-
+    
   }
   //연결 되었을때
   handleConnection(@ConnectedSocket() socket: Socket): any {
