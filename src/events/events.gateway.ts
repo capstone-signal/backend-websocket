@@ -1,42 +1,26 @@
 import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
+//import { WebSocket } from 'ws';
 import { Server , Socket} from 'socket.io';
 import { onlineMap } from './onlineMap';
-
-
+const WebSocket = require('ws');
+const yWebsocketUtils = require('y-websocket/bin/utils');
 
 @WebSocketGateway(parseInt(process.env.WEBSOCKET_PORT), {transports: ['websocket']}) // TODO : config service for externalization config
-export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect{
+export class EventsGateway {
   @WebSocketServer() public server : Server;
-
-  @SubscribeMessage('message')
-  async handleMessage(@MessageBody() data) {
-    console.log(data);
-    this.server.emit('ServerToClient', data);
-  }
 
   afterInit(server: Server) {
     console.log('Websocketserver init');
-    
+    server.addListener('connection', yWebsocketUtils.setupWSConnection);
   }
+
   //연결 되었을때
-  handleConnection(@ConnectedSocket() socket: Socket): any {
-    console.log('connected', socket.nsp.name);
-
-    if(!onlineMap[socket.nsp.name]){
-      onlineMap[socket.nsp.name] = {};
-    }
-
-    socket.emit('hello', socket.nsp.name);
-
-  }
+  handleConnection(@ConnectedSocket() socket: WebSocket): any {
+    //socket.send('connected');
+  }  
   //연결 끊겼을때
+
   handleDisconnect(@ConnectedSocket() socket: Socket): any{
-
-    console.log('disconnected', socket.nsp.name);
-
-    const newNameSpace = socket.nsp;
-    delete onlineMap[socket.nsp.name][socket.id];
-    newNameSpace.emit('onlineList', Object.values(onlineMap[socket.nsp.name]));
-      
+    console.log('disconnected');
   }
 }
