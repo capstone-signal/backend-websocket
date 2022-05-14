@@ -5,7 +5,7 @@ const yWebsocketUtils = require('y-websocket/bin/utils');
 
 var socketsStatus= {};
 
-@WebSocketGateway(80, {transports: ['websocket']}) // TODO : config service for externalization config
+@WebSocketGateway(process.env.WEBSOCKET_PORT as unknown as number, {transports: ['websocket']}) // TODO : config service for externalization config
 export class EventsGateway {
 @WebSocketServer() public server : Server;
 
