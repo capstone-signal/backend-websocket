@@ -5,6 +5,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import configuration from './config/configuration';
 import { EventsModule } from './events/events.module';
+import { Discussion } from './model/Discussion.entity';
+import { DiscussionCode } from './model/DiscussionCode.entity';
+import { Review } from './model/Review.entity';
+import { ReviewReservation } from './model/ReviewReservation.entity';
+import { User } from './model/User.entity';
 import { VoiceGateway } from './voice.gateway';
 
 @Module({
@@ -18,7 +23,7 @@ import { VoiceGateway } from './voice.gateway';
     username: process.env.DATABASE_USER,
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
-    entities: [],
+    entities: [User, Discussion, DiscussionCode, Review, ReviewReservation],
     synchronize: false,
   })
 ],
