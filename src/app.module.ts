@@ -10,22 +10,29 @@ import { DiscussionCode } from './model/DiscussionCode.entity';
 import { Review } from './model/Review.entity';
 import { ReviewReservation } from './model/ReviewReservation.entity';
 import { User } from './model/User.entity';
+import { AuthModule } from './service/auth/auth.module';
+import { ReservationModule } from './service/reservation/reservation.module';
 import { VoiceGateway } from './voice.gateway';
 
 @Module({
-  imports: [EventsModule, ConfigModule.forRoot({
-    load: [configuration]
-  }),
-  TypeOrmModule.forRoot({
-    type: 'mysql',
-    host: process.env.DATABASE_HOST,
-    port: parseInt(process.env.DATABASE_PORT, 10) || 3306,
-    username: process.env.DATABASE_USER,
-    password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME,
-    entities: [User, Discussion, DiscussionCode, Review, ReviewReservation],
-    synchronize: false,
-  })
+  imports: [
+    EventsModule,
+    ReservationModule,
+    AuthModule,
+    ConfigModule.forRoot({
+      load: [configuration],
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRoot({
+      type: 'mysql',
+      host: process.env.DATABASE_HOST,
+      port: parseInt(process.env.DATABASE_PORT, 10) || 3306,
+      username: process.env.DATABASE_USER,
+      password: process.env.DATABASE_PASSWORD,
+      database: process.env.DATABASE_NAME,
+      entities: [User, Discussion, DiscussionCode, Review, ReviewReservation],
+      synchronize: false,
+    })
 ],
   controllers: [AppController],
   providers: [AppService, VoiceGateway],
