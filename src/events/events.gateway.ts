@@ -4,7 +4,9 @@ import { Request } from 'express';
 import { Server , Socket} from 'socket.io';
 import { AuthService } from 'src/service/auth/auth.service';
 import { ReservationService } from 'src/service/reservation/reservation.service';
+import { ReviewService } from 'src/service/review/review.service';
 import { EventsService } from './events.service';
+import Y from 'yjs';
 const WebSocket = require('ws');
 const yWebsocketUtils = require('y-websocket/bin/utils');
 
@@ -14,7 +16,8 @@ export class EventsGateway {
     private readonly configService: ConfigService,
     private readonly reservationService: ReservationService,
     private readonly authService: AuthService,
-    private readonly eventsService: EventsService
+    private readonly eventsService: EventsService,
+    private readonly reviewService: ReviewService
   ) {}
 
   @WebSocketServer() public server : Server;
@@ -45,10 +48,24 @@ export class EventsGateway {
          // throw new Error('Reservation is not processing');
         }
 
-        // init phase 1  : y websocket based on docName
         const docName = req.url.split('/')[1];
-        // 만약 문서가 없으면 초기화 해야함
+
+        // init phase
+        const ydoc = yWebsocketUtils.getYDoc(docName);
+        const text = ydoc.getText(docName) as Y.Text;
+        if(this.isNotInitialized(text)) {
+          const { codeAfter } = await this.reviewService.getReviewDiff(reviewDiffId);
+          text.insert(0, codeAfter, {});
+        }
+        console.log(text.toString())
+       
         yWebsocketUtils.setupWSConnection(conn, req, { docName, gc: true });
+        // shutdown phase
+        // conn.addEventListener('message', (event) => {
+        //   if(!this.reservationService.isProcessing(reservation)) {
+        //     this.handleCloseConnection(conn);
+        //   }
+        // })
       } catch (e) {
         console.error(e);
         conn.close();
@@ -56,6 +73,10 @@ export class EventsGateway {
     });
   }
 
+// check initializing TODO 다른 방법 찾아보기
+  private isNotInitialized(text: any) {
+    return text.toString() === '';
+  }
 
   //연결 되었을때
   handleConnection(@ConnectedSocket() socket: WebSocket): any {
@@ -63,5 +84,9 @@ export class EventsGateway {
   }  
   //연결 끊겼을때
   handleDisconnect(@ConnectedSocket() socket: Socket): any{
+  }
+
+  handleCloseConnection(connection: WebSocket): any {
+    connection.close(1000);
   }
 }
