@@ -40,7 +40,6 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "socket.io": "^4.5.0",
-    "socketio": "^1.0.0",
     "typeorm": "^0.2.45",
     "y-websocket": "^1.4.0",
     "yjs": "^13.5.35"
