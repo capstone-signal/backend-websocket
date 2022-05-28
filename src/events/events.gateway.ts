@@ -10,7 +10,7 @@ import Y from 'yjs';
 const WebSocket = require('ws');
 const yWebsocketUtils = require('y-websocket/bin/utils');
 
-const SYNC_PERIOD = 10;
+const SYNC_PERIOD = 20;
 const WSS_PORT = 3001;
 @WebSocketGateway(WSS_PORT, {transports: ['websocket']}) // TODO : config service for externalization config
 export class EventsGateway {
@@ -54,18 +54,19 @@ export class EventsGateway {
         // init phase
         const ydoc = yWebsocketUtils.getYDoc(docName);
         const text = ydoc.getText(docName) as Y.Text;
+        const reviewDiff = await this.reviewService.getReviewDiff(reviewDiffId);
         if(this.isNotInitialized(text)) {
-          const { codeAfter } = await this.reviewService.getReviewDiff(reviewDiffId);
-          console.log(codeAfter);
-          text.insert(0, codeAfter, {});
+          console.log(reviewDiff.codeAfter);
+          text.insert(0, reviewDiff.codeAfter, {});
         }
         yWebsocketUtils.setupWSConnection(conn, req, { docName, gc: true });
-        conn.addEventListener('message', (event) => {
+        conn.addEventListener('message', async (event) => {
           if(!this.reservationService.isProcessing(reservation)) {
             this.handleCloseConnection(conn); // 1. 세션 종료 시 연결 끊기
           }
-          if(event.timeStamp % SYNC_PERIOD === 0) { // 2. 랜덤하게 데이터 동기화 시켜주기 TODO NoSQL로 성능개선
-            console.log(text.toString());
+          const now = new Date().getTime();
+          if(now % SYNC_PERIOD === 0) { // 2. 랜덤하게 데이터 동기화 시켜주기 TODO NoSQL로 성능개선
+            await this.reviewService.updateReviewDiff(reviewDiff, text.toString());
           }
         })
       } catch (e) {
