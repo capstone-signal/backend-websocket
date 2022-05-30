@@ -11,6 +11,9 @@ export class Review {
 	@Column({ name: "review_type" })
 	reviewType: "COMMENT" | "LIVE";
 
+	@Column({ name: 'isdone', type: "tinyint" })
+	isDone: boolean;
+
 	@ManyToOne(() => User, {
 		eager: true
 	})
