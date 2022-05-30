@@ -34,7 +34,6 @@ export class EventsGateway {
           this.handleCloseConnection(conn, "reservation not found");
         }
 
-        console.log(req.headers);
         const cookies = req.headers.cookie.split(';');
         const accessToken = cookies.find(cookie => cookie.split('=')[0].trim() === 'accessToken').split('=')[1];
         if(!accessToken) {

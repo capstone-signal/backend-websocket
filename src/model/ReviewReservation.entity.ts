@@ -24,7 +24,7 @@ export class ReviewReservation {
 	reviewer: User;	
 
 	@ManyToOne(() => Review, {
-		nullable: true,
+		eager: true
 	})
 	@JoinColumn({ name: "review_id" })
 	review: Review;
