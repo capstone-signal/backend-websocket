@@ -31,22 +31,23 @@ export class EventsGateway {
 
         const reservation = await this.reservationService.findById(reservationId);
         if(!reservation) {
-          throw new Error('Reservation not found');
+          this.handleCloseConnection(conn, "reservation not found");
         }
 
+        console.log(req.headers);
         const cookies = req.headers.cookie.split(';');
         const accessToken = cookies.find(cookie => cookie.split('=')[0].trim() === 'accessToken').split('=')[1];
         if(!accessToken) {
-          throw new Error('Access token not found');
+          this.handleCloseConnection(conn, "accessToken not found");
         }
 
         const userId = this.authService.validateToken(accessToken);
         if(!userId || userId != reservation.reviewer.id && userId != reservation.discussion.user.id) {
-          throw new Error('Invalid user');
+          this.handleCloseConnection(conn, "Invalid userId");
         }
 
         if(!this.reservationService.isProcessing(reservation)) {
-         // throw new Error('Reservation is not processing');
+          this.handleCloseConnection(conn, "reservation is not processing");
         }
 
         const docName = req.url.split('/socket/')[1];
@@ -62,7 +63,8 @@ export class EventsGateway {
         yWebsocketUtils.setupWSConnection(conn, req, { docName, gc: true });
         conn.addEventListener('message', async (event) => {
           if(!this.reservationService.isProcessing(reservation)) {
-            this.handleCloseConnection(conn); // 1. 세션 종료 시 연결 끊기
+            await this.reviewService.complete(reservation);
+            this.handleCloseConnection(conn, 'review is completed', 3999);
           }
           const now = new Date().getTime();
           if(now % SYNC_PERIOD === 0) { // 2. 랜덤하게 데이터 동기화 시켜주기 TODO NoSQL로 성능개선
@@ -89,8 +91,8 @@ export class EventsGateway {
   handleDisconnect(@ConnectedSocket() socket: Socket): any{
   }
 
-  handleCloseConnection(connection: WebSocket): any {
-    console.log("close connection");
-    connection.close(1000);
+  handleCloseConnection(connection: WebSocket, message?: string, code?: number): any {
+    console.log("close connection", message);
+    connection.close(code ?? 1000, message);
   }
 }
