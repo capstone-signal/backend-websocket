@@ -1,49 +1,53 @@
 import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import * as ws from 'ws';
+import { Server , Socket} from 'socket.io';
 
-var socketsStatus= {};
 
-@WebSocketGateway(8082, {cors: {
-  origin: 'http://localhost:3000'
+@WebSocketGateway(3002, {cors: {
+  origin: '*'
 },
 trnasport : ['websocket'] }) // TODO : config service for externalization config
 export class VoiceGateway {
-@WebSocketServer() public server : ws.Server;
+@WebSocketServer() public server : Server;
+wsClients: Socket[] = [];
 
-  afterInit(server : ws.Server){
-    server.on('connection', (socket: ws.Socket) => {
+  afterInit(server : Server){
+    server.on('connection', (socket: Socket) => {
       console.log('Client connected');
     });
   }
-    
-  @SubscribeMessage("userInformation")
-  userInformation(@MessageBody() data: string, @ConnectedSocket() client: ws.Socket){
-    socketsStatus[client.id] = data;
-    console.log(data)
-    this.server.emit("usersUpdate", socketsStatus);
-  }
   
   @SubscribeMessage("voice")
-  voice(@MessageBody() data: string, @ConnectedSocket() socket: ws.WebSocket){
-
-  
+  voice(@MessageBody() data: string, @ConnectedSocket() socket: Socket){
     var datanew = null;
     var newData = data.split(";")
     newData[0] = "data:audio/ogg;";
     datanew = newData[0] + newData[1]
-    for (const id in socketsStatus) {
-  
-      if (id != socket.id && !socketsStatus[id].mute && socketsStatus[id].online)
-        socket.broadcast.to(id).emit("send", datanew);
+    this.broadcast('send', datanew);
+  }
+  private broadcast(event, message: any) {
+    const sendMessage:any = {
+      event: event,
+      datas: message
     }
-  
+    
+    const broadCastMessage = JSON.stringify(sendMessage);
+    for (let c of this.wsClients) {
+      c.send(broadCastMessage);
+    }
   }
   //연결 되었을때
-  handleConnection(@ConnectedSocket() socket: ws.Socket): any {
-    socket.send('connected');
+  handleConnection(client:any): any {
+    this.wsClients.push(client);
+    console.log(this.wsClients.length);
   }  
   //연결 끊겼을때
-  handleDisconnect(@ConnectedSocket() socket: ws.Socket): any{
-    delete socketsStatus[socket.id];
+  handleDisconnect(@ConnectedSocket() socket: Socket,client:any): any{
+    for (let i = 0; i < this.wsClients.length; i++) {
+      if (this.wsClients[i] === client) {
+        this.wsClients.splice(i, 1);
+        break;
+      }
+    }
+    this.broadcast('disconnect',{});
   }
 }
