@@ -7,6 +7,7 @@ import { ReservationService } from 'src/service/reservation/reservation.service'
 import { ReviewService } from 'src/service/review/review.service';
 import { EventsService } from './events.service';
 import Y from 'yjs';
+
 const WebSocket = require('ws');
 const yWebsocketUtils = require('y-websocket/bin/utils');
 
@@ -27,6 +28,9 @@ export class EventsGateway {
   afterInit(server: Server) {
     server.addListener('connection', async (conn: WebSocket, req: Request) => {
       try {
+        if(!req.url.startsWith('/socket/')) {
+          return
+        }
         const { reservationId, reviewDiffId } = this.eventsService.parseUrl(req.url.split('/socket/')[1]);
 
         const reservation = await this.reservationService.findById(reservationId);
@@ -83,8 +87,7 @@ export class EventsGateway {
   }
 
   //연결 되었을때
-  handleConnection(@ConnectedSocket() socket: WebSocket): any {
-    // socket.send('connected');
+  handleConnection(client: any, @ConnectedSocket() socket: WebSocket): any {
   }  
   //연결 끊겼을때
   handleDisconnect(@ConnectedSocket() socket: Socket): any{
